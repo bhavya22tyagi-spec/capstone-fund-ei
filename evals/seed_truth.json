@@ -1,0 +1,939 @@
+{
+  "_meta": {
+    "purpose": "Master ground-truth record for all 5 live Funds. Source of truth for Evals A (extraction), C (RAG Q/A), D (text-to-SQL). Do not let this drift from the documents generated from it.",
+    "generated_at": "2026-06-20",
+    "ruleset_version": "v1",
+    "prd_sections": ["7", "7.2", "7.3", "7.4", "9.1", "9.2", "9.3", "17"],
+    "tier_thresholds": {
+      "low":      [0.0,  25.99],
+      "medium":   [26.0, 50.99],
+      "high":     [51.0, 75.99],
+      "critical": [76.0, 100.0]
+    },
+    "fund_weights": {
+      "country":   0.20,
+      "screening": 0.30,
+      "pep":       0.20,
+      "ubo":       0.20,
+      "documents": 0.10
+    },
+    "ble_weights": {
+      "country":   0.25,
+      "screening": 0.375,
+      "pep":       0.25,
+      "documents": 0.125
+    },
+    "screening_sub_scores": {
+      "none":      0,
+      "low":      25,
+      "medium":   50,
+      "high":     75,
+      "confirmed": 100
+    },
+    "pep_tier_sub_scores": {
+      "0": 0,
+      "1": 100,
+      "2": 67,
+      "3": 33
+    },
+    "deliberate_document_imperfections": {
+      "note": "Introduced in Phase 3 document generation. Noted here so eval golden sets know the correct value vs. the planted imperfection.",
+      "imperfections": [
+        {
+          "fund": "Meridian Strategic Growth Trust",
+          "document": "UBO Declaration",
+          "type": "mismatched_percentage",
+          "field": "Werner Mueller effective_ownership_pct",
+          "correct_value": 40.0,
+          "planted_value": "TBD in Phase 3"
+        },
+        {
+          "fund": "Harrington Private Capital",
+          "document": "Regulatory Licence",
+          "type": "inconsistent_date",
+          "field": "expiry_date",
+          "correct_value": "2026-07-08",
+          "planted_value": "TBD in Phase 3"
+        },
+        {
+          "fund": "Queensbridge Emerging Markets Fund LP",
+          "document": "Investment Manager Agreement",
+          "type": "missing_field",
+          "field": "TBD in Phase 3",
+          "correct_value": "TBD in Phase 3",
+          "planted_value": null
+        }
+      ]
+    }
+  },
+
+  "shared_counterparties": {
+    "dbs_bank_ltd": {
+      "counterparty_id": "c0000003-c000-0000-0000-000000000003",
+      "institution_name": "DBS Bank Ltd",
+      "screening_name_queried": "DBS Bank Ltd",
+      "screening": {
+        "result_status": "clean",
+        "hit_severity": "none",
+        "hit_type": null,
+        "is_mock_in_dev": true
+      },
+      "bles_referencing": [
+        {"fund": "Meridian Strategic Growth Trust", "ble_id": "b0002002-b000-0000-0000-000000000003", "location": "Singapore"},
+        {"fund": "Aldgate Street Capital Fund",     "ble_id": "b0003001-b000-0000-0000-000000000004", "location": "Hong Kong"}
+      ]
+    }
+  },
+
+  "live_funds": [
+    {
+      "_comment": "FUND 1 — Northgate Capital Partners LP. Escalation demo: Fund direct LOW but BLE CRITICAL → Fund effective CRITICAL (PRD §9.3).",
+      "fund_id": "f0000001-f000-0000-0000-000000000001",
+      "name": "Northgate Capital Partners LP",
+      "synthetic_profile": true,
+      "synthetic_static": false,
+      "incorporation": {
+        "country_code": "CYM",
+        "country_name": "Cayman Islands",
+        "date": "2019-03-15",
+        "registration_number": "EX-CYM-2019-08742",
+        "legal_form": "Exempted Limited Partnership",
+        "registered_address": "Harbour Place, 103 South Church Street, George Town, Grand Cayman KY1-1002, Cayman Islands"
+      },
+      "authorized_representative": {
+        "name": "James H. Northgate",
+        "title": "General Partner"
+      },
+      "share_capital": {
+        "currency": "USD",
+        "amount": 10000000
+      },
+      "fund_scoring_factors": {
+        "incorporation_country_risk": 45.0,
+        "screening_severity": "none",
+        "screening_sub_score": 0,
+        "pep_tier": 0,
+        "pep_sub_score": 0,
+        "ubo_risk": 10.0,
+        "document_completeness": 0.0
+      },
+      "fund_risk_result": {
+        "direct_score": 11.0,
+        "direct_tier": "low",
+        "effective_tier": "critical",
+        "hard_stop": false,
+        "escalated_tier": "critical",
+        "escalation_reason": "Escalated to Critical due to BLE(s): Bank Rossiya (Moscow, Russia)",
+        "factor_breakdown": {
+          "country":   9.0,
+          "screening": 0.0,
+          "pep":       0.0,
+          "ubo":       2.0,
+          "documents": 0.0
+        }
+      },
+      "ubos": [
+        {
+          "name": "John Richardson",
+          "ownership_pct": 70.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": "GBR",
+          "jurisdiction": "GBR",
+          "parent_entity": null
+        },
+        {
+          "name": "Cayman Ventures Ltd",
+          "ownership_pct": 30.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": "CYM",
+          "registration_number": "EX-CYM-2014-03219",
+          "parent_entity": null
+        }
+      ],
+      "fund_documents": [
+        {
+          "type": "Incorporation Certificate",
+          "status": "verified",
+          "expiry_date": null
+        },
+        {
+          "type": "UBO Declaration",
+          "status": "verified",
+          "expiry_date": null
+        }
+      ],
+      "bles": [
+        {
+          "ble_id": "b0001001-b000-0000-0000-000000000001",
+          "counterparty_id": "c0000001-c000-0000-0000-000000000001",
+          "counterparty_name": "Bank Rossiya",
+          "screening_name_queried": "Bank Rossiya",
+          "location": "Moscow, Russia",
+          "counterparty_country_code": "RUS",
+          "counterparty_country_risk": 90.0,
+          "note_prd_7_2": "Bank Rossiya is a real sanctioned entity. No fabricated structural details (directors, capital, registration) are attributed to it beyond the screening match result.",
+          "screening": {
+            "result_status": "hit",
+            "hit_severity": "confirmed",
+            "hit_type": "sanctions",
+            "is_mock_in_dev": true,
+            "real_api_expected_result": "CONFIRMED sanctions hit (OFAC SDN + EU restrictive measures)"
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 90.0,
+            "screening_severity": "confirmed",
+            "screening_sub_score": 100,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 100.0,
+            "direct_tier": "critical",
+            "effective_tier": "critical",
+            "hard_stop": true,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2022-07-01",
+            "agreement_ref": "NCP-BR-2022-001",
+            "facility_type": "Loan",
+            "credit_facility_currency": "USD",
+            "credit_facility_amount": 5000000
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0001011-p000-0000-0000-000000000001",
+              "type": "Loan",
+              "workflow": "ble_loan_onboarding_v1"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "FUND 2 — Meridian Strategic Growth Trust. UBO chain unresolved beyond layer 2 (Meridian Holdings Ltd). Annual Report expired 45 days ago. Fund direct MEDIUM.",
+      "fund_id": "f0000002-f000-0000-0000-000000000002",
+      "name": "Meridian Strategic Growth Trust",
+      "synthetic_profile": true,
+      "synthetic_static": false,
+      "incorporation": {
+        "country_code": "LUX",
+        "country_name": "Luxembourg",
+        "date": "2017-09-22",
+        "registration_number": "LUX-B-247891",
+        "legal_form": "Fonds Commun de Placement (FCP)",
+        "registered_address": "4, Rue de la Gare, L-1616 Luxembourg"
+      },
+      "authorized_representative": {
+        "name": "Jean-Pierre Blanc",
+        "title": "Managing Director"
+      },
+      "share_capital": {
+        "currency": "EUR",
+        "amount": 25000000
+      },
+      "fund_scoring_factors": {
+        "incorporation_country_risk": 10.0,
+        "screening_severity": "none",
+        "screening_sub_score": 0,
+        "pep_tier": 2,
+        "pep_sub_score": 67,
+        "ubo_risk": 60.0,
+        "document_completeness": 50.0
+      },
+      "fund_risk_result": {
+        "direct_score": 32.4,
+        "direct_tier": "medium",
+        "effective_tier": "medium",
+        "hard_stop": false,
+        "escalated_tier": null,
+        "escalation_reason": null,
+        "factor_breakdown": {
+          "country":   2.0,
+          "screening": 0.0,
+          "pep":      13.4,
+          "ubo":      12.0,
+          "documents": 5.0
+        }
+      },
+      "ubos": [
+        {
+          "name": "Meridian Holdings Ltd",
+          "ownership_pct": 60.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": "CYM",
+          "registration_number": "EX-CYM-2012-77341",
+          "parent_entity": null
+        },
+        {
+          "name": "[Layer 2 entity unknown]",
+          "ownership_pct": null,
+          "layer_depth": 2,
+          "resolved": false,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": null,
+          "parent_entity": "Meridian Holdings Ltd",
+          "note": "Ultimate beneficial owner of Meridian Holdings Ltd is unresolved — UBO chain incomplete at layer 2 (PRD §7.4 test case)"
+        },
+        {
+          "name": "EU Capital Partners SA",
+          "ownership_pct": 40.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": "LUX",
+          "registration_number": "LUX-B-189452",
+          "parent_entity": null
+        },
+        {
+          "name": "Werner Mueller",
+          "ownership_pct": 40.0,
+          "effective_fund_ownership_pct_note": "Werner Mueller owns 100% of EU Capital Partners SA, which holds 40% of the Fund; effective beneficial interest = 40%",
+          "layer_depth": 2,
+          "resolved": true,
+          "pep_tier": 2,
+          "pep_designation": "Senior Official, European Banking Supervisory Committee (synthetic)",
+          "nationality": "DEU",
+          "jurisdiction": "DEU",
+          "parent_entity": "EU Capital Partners SA"
+        }
+      ],
+      "fund_documents": [
+        {
+          "type": "Incorporation Certificate",
+          "status": "verified",
+          "expiry_date": null
+        },
+        {
+          "type": "UBO Declaration",
+          "status": "verified",
+          "expiry_date": null
+        },
+        {
+          "type": "Annual Report",
+          "status": "expired",
+          "period": "FY 2024 (2024-01-01 to 2024-12-31)",
+          "expiry_date": "2026-05-06",
+          "note": "Considered stale/expired under KYB policy 45 days past the review cut-off (PRD §7.4 test case: expired document)"
+        }
+      ],
+      "bles": [
+        {
+          "ble_id": "b0002001-b000-0000-0000-000000000002",
+          "counterparty_id": "c0000002-c000-0000-0000-000000000002",
+          "counterparty_name": "Deutsche Bank AG",
+          "screening_name_queried": "Deutsche Bank AG",
+          "location": "Frankfurt, Germany",
+          "counterparty_country_code": "DEU",
+          "counterparty_country_risk": 5.0,
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 5.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 1.25,
+            "direct_tier": "low",
+            "effective_tier": "low",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2021-04-15",
+            "agreement_ref": "MSG-DB-2021-003",
+            "facility_type": "Cash Management"
+          },
+          "ble_documents": [
+            {
+              "type": "Framework Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0002011-p000-0000-0000-000000000002",
+              "type": "Cash",
+              "workflow": "ble_cash_onboarding_v1"
+            }
+          ]
+        },
+        {
+          "ble_id": "b0002002-b000-0000-0000-000000000003",
+          "counterparty_id": "c0000003-c000-0000-0000-000000000003",
+          "counterparty_name": "DBS Bank Ltd",
+          "screening_name_queried": "DBS Bank Ltd",
+          "location": "Singapore",
+          "counterparty_country_code": "SGP",
+          "counterparty_country_risk": 10.0,
+          "shared_counterparty_note": "Same counterparty_profiles record as Aldgate Street Capital Fund BLE 1 (Hong Kong). Screened once, result reused (PRD §17).",
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 10.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 2.5,
+            "direct_tier": "low",
+            "effective_tier": "low",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2022-11-01",
+            "agreement_ref": "MSG-DBS-2022-007",
+            "facility_type": "Loan"
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0002021-p000-0000-0000-000000000003",
+              "type": "Loan",
+              "workflow": "ble_loan_onboarding_v1"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "FUND 3 — Aldgate Street Capital Fund. Clean LOW-risk fund. Shares DBS Bank Ltd counterparty_id with Meridian BLE 2.",
+      "fund_id": "f0000003-f000-0000-0000-000000000003",
+      "name": "Aldgate Street Capital Fund",
+      "synthetic_profile": true,
+      "synthetic_static": false,
+      "incorporation": {
+        "country_code": "IRL",
+        "country_name": "Ireland",
+        "date": "2021-06-08",
+        "registration_number": "IRL-673421",
+        "legal_form": "Qualifying Investor Alternative Investment Fund (QIAIF)",
+        "registered_address": "2 Grand Canal Square, Dublin 2, D02 A342, Ireland"
+      },
+      "authorized_representative": {
+        "name": "Siobhan Murphy",
+        "title": "Fund Manager"
+      },
+      "share_capital": {
+        "currency": "EUR",
+        "amount": 5000000
+      },
+      "fund_scoring_factors": {
+        "incorporation_country_risk": 5.0,
+        "screening_severity": "none",
+        "screening_sub_score": 0,
+        "pep_tier": 0,
+        "pep_sub_score": 0,
+        "ubo_risk": 5.0,
+        "document_completeness": 0.0
+      },
+      "fund_risk_result": {
+        "direct_score": 2.0,
+        "direct_tier": "low",
+        "effective_tier": "low",
+        "hard_stop": false,
+        "escalated_tier": null,
+        "escalation_reason": null,
+        "factor_breakdown": {
+          "country":   1.0,
+          "screening": 0.0,
+          "pep":       0.0,
+          "ubo":       1.0,
+          "documents": 0.0
+        }
+      },
+      "ubos": [
+        {
+          "name": "Patrick O'Brien",
+          "ownership_pct": 100.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": "IRL",
+          "jurisdiction": "IRL",
+          "parent_entity": null
+        }
+      ],
+      "fund_documents": [
+        {
+          "type": "Incorporation Certificate",
+          "status": "verified",
+          "expiry_date": null
+        }
+      ],
+      "bles": [
+        {
+          "ble_id": "b0003001-b000-0000-0000-000000000004",
+          "counterparty_id": "c0000003-c000-0000-0000-000000000003",
+          "counterparty_name": "DBS Bank Ltd",
+          "screening_name_queried": "DBS Bank Ltd",
+          "location": "Hong Kong",
+          "counterparty_country_code": "HKG",
+          "counterparty_country_risk": 20.0,
+          "shared_counterparty_note": "Same counterparty_profiles record as Meridian Strategic Growth Trust BLE 2 (Singapore). Screened once, result reused (PRD §17).",
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 20.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 5.0,
+            "direct_tier": "low",
+            "effective_tier": "low",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2023-02-28",
+            "agreement_ref": "ASC-DBS-2023-001",
+            "facility_type": "Loan"
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0003011-p000-0000-0000-000000000004",
+              "type": "Loan",
+              "workflow": "ble_loan_onboarding_v1"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "FUND 4 — Harrington Private Capital. HIGH direct score (Malta + PEP T1 + LOW screening flag). Regulatory Licence expiring 2026-07-08. BLE MEDIUM (Emirates NBD + PEP T2 contact).",
+      "fund_id": "f0000004-f000-0000-0000-000000000004",
+      "name": "Harrington Private Capital",
+      "synthetic_profile": true,
+      "synthetic_static": false,
+      "incorporation": {
+        "country_code": "MLT",
+        "country_name": "Malta",
+        "date": "2018-11-30",
+        "registration_number": "MLT-C-88412",
+        "legal_form": "Private Limited Company",
+        "registered_address": "Tower Business Centre, Tower Street, Swatar BKR 4013, Malta"
+      },
+      "authorized_representative": {
+        "name": "Robert Harrington III",
+        "title": "Managing Director / Principal Owner"
+      },
+      "share_capital": {
+        "currency": "USD",
+        "amount": 15000000
+      },
+      "fund_scoring_factors": {
+        "incorporation_country_risk": 55.0,
+        "screening_severity": "low",
+        "screening_sub_score": 25,
+        "screening_note": "Adverse media flag — synthetic; no real positive match",
+        "pep_tier": 1,
+        "pep_sub_score": 100,
+        "ubo_risk": 45.0,
+        "document_completeness": 40.0
+      },
+      "fund_risk_result": {
+        "direct_score": 51.5,
+        "direct_tier": "high",
+        "effective_tier": "high",
+        "hard_stop": false,
+        "escalated_tier": null,
+        "escalation_reason": null,
+        "factor_breakdown": {
+          "country":   11.0,
+          "screening":  7.5,
+          "pep":       20.0,
+          "ubo":        9.0,
+          "documents":  4.0
+        }
+      },
+      "ubos": [
+        {
+          "name": "Robert Harrington III",
+          "ownership_pct": 51.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 1,
+          "pep_designation": "Former Minister of Finance, Government of Malta (synthetic)",
+          "nationality": "MLT",
+          "jurisdiction": "MLT",
+          "parent_entity": null
+        },
+        {
+          "name": "HAP Holding Ltd",
+          "ownership_pct": 49.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": "MLT",
+          "registration_number": "MLT-C-67891",
+          "parent_entity": null
+        },
+        {
+          "name": "Sarah Chen",
+          "ownership_pct": 49.0,
+          "effective_fund_ownership_pct_note": "Sarah Chen owns 100% of HAP Holding Ltd, which holds 49% of the Fund; effective beneficial interest = 49%",
+          "layer_depth": 2,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": "SGP",
+          "jurisdiction": "SGP",
+          "parent_entity": "HAP Holding Ltd"
+        }
+      ],
+      "fund_documents": [
+        {
+          "type": "Incorporation Certificate",
+          "status": "verified",
+          "expiry_date": null
+        },
+        {
+          "type": "Regulatory Licence",
+          "status": "verified",
+          "expiry_date": "2026-07-08",
+          "note": "Expiring within 18 days of seed date (2026-06-20). Triggers document_expiry review trigger."
+        }
+      ],
+      "bles": [
+        {
+          "ble_id": "b0004001-b000-0000-0000-000000000005",
+          "counterparty_id": "c0000004-c000-0000-0000-000000000004",
+          "counterparty_name": "Emirates NBD Bank PJSC",
+          "screening_name_queried": "Emirates NBD Bank PJSC",
+          "location": "Dubai, UAE",
+          "counterparty_country_code": "ARE",
+          "counterparty_country_risk": 40.0,
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 40.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 2,
+            "pep_sub_score": 67,
+            "document_completeness": 10.0
+          },
+          "ble_risk_result": {
+            "direct_score": 28.0,
+            "direct_tier": "medium",
+            "effective_tier": "medium",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": {
+            "pep_name": "Ahmad Al-Rashidi",
+            "pep_role": "Connected Director, Emirates NBD Bank PJSC — Dubai branch (synthetic)",
+            "pep_tier": 2,
+            "pep_designation": "Senior Government Official, UAE Ministry of Finance (synthetic)"
+          },
+          "counterparty_agreement": {
+            "agreement_date": "2023-09-01",
+            "agreement_ref": "HPC-ENBD-2023-002",
+            "facility_type": "Cash Management"
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0004011-p000-0000-0000-000000000005",
+              "type": "Cash",
+              "workflow": "ble_cash_onboarding_v1"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "FUND 5 — Queensbridge Emerging Markets Fund LP. Low risk across the board. Two BLEs, three products total. Demonstrates multi-BLE / multi-product structure.",
+      "fund_id": "f0000005-f000-0000-0000-000000000005",
+      "name": "Queensbridge Emerging Markets Fund LP",
+      "synthetic_profile": true,
+      "synthetic_static": false,
+      "incorporation": {
+        "country_code": "SGP",
+        "country_name": "Singapore",
+        "date": "2020-04-01",
+        "registration_number": "SGP-202009123Z",
+        "legal_form": "Limited Partnership",
+        "registered_address": "1 Raffles Place, #40-01 One Raffles Place, Singapore 048616"
+      },
+      "authorized_representative": {
+        "name": "James Wentworth",
+        "title": "Managing Partner"
+      },
+      "share_capital": {
+        "currency": "USD",
+        "amount": 20000000
+      },
+      "fund_scoring_factors": {
+        "incorporation_country_risk": 10.0,
+        "screening_severity": "none",
+        "screening_sub_score": 0,
+        "pep_tier": 0,
+        "pep_sub_score": 0,
+        "ubo_risk": 5.0,
+        "document_completeness": 0.0
+      },
+      "fund_risk_result": {
+        "direct_score": 3.0,
+        "direct_tier": "low",
+        "effective_tier": "low",
+        "hard_stop": false,
+        "escalated_tier": null,
+        "escalation_reason": null,
+        "factor_breakdown": {
+          "country":   2.0,
+          "screening": 0.0,
+          "pep":       0.0,
+          "ubo":       1.0,
+          "documents": 0.0
+        }
+      },
+      "ubos": [
+        {
+          "name": "Queensbridge Asset Management Ltd",
+          "ownership_pct": 100.0,
+          "layer_depth": 1,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": null,
+          "jurisdiction": "SGP",
+          "registration_number": "SGP-201708901N",
+          "parent_entity": null
+        },
+        {
+          "name": "James Wentworth",
+          "ownership_pct": 60.0,
+          "effective_fund_ownership_pct_note": "James Wentworth holds 60% of Queensbridge Asset Management Ltd, which holds 100% of the Fund; effective beneficial interest = 60%",
+          "layer_depth": 2,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": "GBR",
+          "jurisdiction": "GBR",
+          "parent_entity": "Queensbridge Asset Management Ltd"
+        },
+        {
+          "name": "Victoria Forsythe",
+          "ownership_pct": 40.0,
+          "effective_fund_ownership_pct_note": "Victoria Forsythe holds 40% of Queensbridge Asset Management Ltd, which holds 100% of the Fund; effective beneficial interest = 40%",
+          "layer_depth": 2,
+          "resolved": true,
+          "pep_tier": 0,
+          "pep_designation": null,
+          "nationality": "AUS",
+          "jurisdiction": "AUS",
+          "parent_entity": "Queensbridge Asset Management Ltd"
+        }
+      ],
+      "fund_documents": [
+        {
+          "type": "Incorporation Certificate",
+          "status": "verified",
+          "expiry_date": null
+        },
+        {
+          "type": "Investment Manager Agreement",
+          "status": "verified",
+          "expiry_date": null
+        }
+      ],
+      "bles": [
+        {
+          "ble_id": "b0005001-b000-0000-0000-000000000006",
+          "counterparty_id": "c0000005-c000-0000-0000-000000000005",
+          "counterparty_name": "ICBC Limited",
+          "screening_name_queried": "ICBC Limited",
+          "location": "Mumbai, India",
+          "counterparty_country_code": "IND",
+          "counterparty_country_risk": 25.0,
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 25.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 6.25,
+            "direct_tier": "low",
+            "effective_tier": "low",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2022-08-15",
+            "agreement_ref": "QEM-ICBC-2022-004",
+            "facility_type": "Loan and Cash Management"
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0005011-p000-0000-0000-000000000006",
+              "type": "Loan",
+              "workflow": "ble_loan_onboarding_v1"
+            },
+            {
+              "product_id": "p0005012-p000-0000-0000-000000000007",
+              "type": "Cash",
+              "workflow": "ble_cash_onboarding_v1"
+            }
+          ]
+        },
+        {
+          "ble_id": "b0005002-b000-0000-0000-000000000007",
+          "counterparty_id": "c0000006-c000-0000-0000-000000000006",
+          "counterparty_name": "Standard Chartered Bank",
+          "screening_name_queried": "Standard Chartered Bank",
+          "location": "Singapore",
+          "counterparty_country_code": "SGP",
+          "counterparty_country_risk": 10.0,
+          "screening": {
+            "result_status": "clean",
+            "hit_severity": "none",
+            "hit_type": null,
+            "is_mock_in_dev": true
+          },
+          "ble_scoring_factors": {
+            "counterparty_country_risk": 10.0,
+            "screening_severity": "none",
+            "screening_sub_score": 0,
+            "pep_tier": 0,
+            "pep_sub_score": 0,
+            "document_completeness": 0.0
+          },
+          "ble_risk_result": {
+            "direct_score": 2.5,
+            "direct_tier": "low",
+            "effective_tier": "low",
+            "hard_stop": false,
+            "escalated_tier": null,
+            "escalation_reason": null
+          },
+          "ble_pep_context": null,
+          "counterparty_agreement": {
+            "agreement_date": "2023-05-10",
+            "agreement_ref": "QEM-SCB-2023-001",
+            "facility_type": "Cash Management"
+          },
+          "ble_documents": [
+            {
+              "type": "Counterparty Agreement",
+              "status": "verified",
+              "expiry_date": null
+            }
+          ],
+          "products": [
+            {
+              "product_id": "p0005021-p000-0000-0000-000000000008",
+              "type": "Cash",
+              "workflow": "ble_cash_onboarding_v1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

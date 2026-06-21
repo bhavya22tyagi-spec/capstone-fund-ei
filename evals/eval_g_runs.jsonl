@@ -1,0 +1,2 @@
+{"status": "deferred", "reason": "Requires 15-20 sampled judge outputs rated by human experts before the judge is trusted as a regression gate (PRD \u00a715.2).", "passed": null, "is_mock": true, "run_at": "2026-06-20T18:42:04.922123+00:00"}
+{"status": "deferred", "reason": "Requires 15-20 sampled judge outputs rated by human experts before the judge is trusted as a regression gate (PRD \u00a715.2).", "passed": null, "is_mock": true, "run_at": "2026-06-20T18:42:38.142167+00:00"}

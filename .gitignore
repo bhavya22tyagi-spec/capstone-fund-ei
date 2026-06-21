@@ -1,0 +1,37 @@
+# Secrets — never commit
+.env
+*.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Runtime artifacts
+uploads/
+logs/
+documents/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+~$*.docx
+~$*.xlsx
+*.swp
+*.swo
+.claude/
+
+# Vercel / Railway local caches
+.vercel/
