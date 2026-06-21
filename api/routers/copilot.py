@@ -14,6 +14,7 @@ import asyncio
 import json
 import os
 import re
+from pathlib import Path
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
@@ -23,6 +24,89 @@ from api.deps import get_text_to_sql
 from api.models import CitationItem, CopilotAnswer, CopilotRequest
 
 MOCK: bool = os.getenv("MOCK", "true").lower() == "true"
+
+_SEED_PATH = Path(__file__).parent.parent.parent / "evals" / "seed_truth.json"
+_RAG_FALLBACK_MODEL = "claude-haiku-4-5-20251001"
+_RAG_FALLBACK_VERSION = "rag-context-fallback-v1"
+
+
+def _build_fund_context(fund_id: str, scope: str, scope_id: str) -> str:
+    """Build structured context from fund/BLE data to inject into LLM prompt."""
+    lines: list[str] = []
+
+    if scope == "fund" and fund_id in LIVE_FUNDS:
+        fund = LIVE_FUNDS[fund_id]
+        lines.append(f"Fund: {fund['name']}")
+        lines.append(f"Incorporation country: {fund.get('incorporation_country', 'unknown')}")
+        lines.append(f"Direct risk tier: {fund.get('direct_tier', 'unknown')}")
+        lines.append(f"Direct risk score: {fund.get('direct_score', 'unknown')}")
+        if fund.get("escalated_tier"):
+            lines.append(f"Escalated tier: {fund['escalated_tier']}")
+            lines.append(f"Escalation reason: {fund.get('escalation_reason', '')}")
+
+        fund_bles = [b for b in LIVE_BLES.values() if b.get("fund_id") == fund_id]
+        if fund_bles:
+            lines.append("\nBanking/Legal Entities (BLEs):")
+            for ble in fund_bles:
+                lines.append(f"  - {ble['name']}: tier={ble.get('tier')}, score={ble.get('score')}")
+
+    elif scope == "ble" and scope_id in LIVE_BLES:
+        ble = LIVE_BLES[scope_id]
+        lines.append(f"BLE: {ble['name']}")
+        lines.append(f"Risk tier: {ble.get('tier')}")
+        lines.append(f"Risk score: {ble.get('score')}")
+        if fund_id in LIVE_FUNDS:
+            lines.append(f"Parent fund: {LIVE_FUNDS[fund_id]['name']}")
+
+    try:
+        with open(_SEED_PATH, encoding="utf-8") as fh:
+            seed = json.load(fh)
+        for fund_raw in seed.get("live_funds", []):
+            if fund_raw["fund_id"] == fund_id:
+                ubos = [u for u in fund_raw.get("ubos", []) if not u.get("name", "").startswith("[")]
+                if ubos:
+                    lines.append("\nUBO Chain:")
+                    for u in ubos:
+                        lines.append(f"  - {u['name']}: {u.get('ownership_pct', '?')}% ownership, PEP tier {u.get('pep_tier', 0)}")
+                docs = fund_raw.get("documents", [])
+                if docs:
+                    lines.append("\nDocuments:")
+                    for d in docs:
+                        lines.append(f"  - {d.get('document_type')}: status={d.get('status')}, expiry={d.get('expiry_date', 'N/A')}")
+                break
+    except Exception:
+        pass
+
+    return "\n".join(lines) if lines else "No structured data available for this fund/BLE."
+
+
+def _llm_context_answer(question: str, scope: str, scope_id: str, fund_id: str) -> tuple[str, list]:
+    """Answer using LLM with injected fund context — fallback when embeddings unavailable."""
+    from services.ai_client import call_llm
+    from services.budget import BudgetCap
+
+    context = _build_fund_context(fund_id, scope, scope_id)
+    prompt = (
+        "You are a compliance analyst assistant for a KYB (Know Your Business) platform. "
+        "Answer the following question based ONLY on the structured data provided below. "
+        "Do not invent facts not present in the data. Be concise and factual.\n\n"
+        f"FUND/BLE DATA:\n{context}\n\n"
+        f"QUESTION: {question}\n\n"
+        "Answer:"
+    )
+    budget = BudgetCap(limit_usd=float(os.getenv("BUDGET_CAP_USD", "0.50")))
+    result = call_llm(
+        prompt=prompt,
+        model=_RAG_FALLBACK_MODEL,
+        prompt_version=_RAG_FALLBACK_VERSION,
+        fund_id=fund_id,
+        synthetic_static=False,
+        scope=scope,
+        scope_id=scope_id,
+        budget=budget,
+        estimated_cost_usd=0.002,
+    )
+    return result["content"], []
 _MOCK_STREAM_DELAY: float = float(os.getenv("MOCK_STREAM_DELAY", "0.001"))
 
 router = APIRouter()
@@ -231,25 +315,33 @@ def ask(body: CopilotRequest) -> CopilotAnswer:
             is_mock=False,
         )
     else:
-        from api.deps import get_rag
-        rag = get_rag()
-        chunks = rag.retrieve(
-            query=question,
-            scope=scope,
-            scope_id=scope_id,
-            fund_id=fund_id,
-            synthetic_static=False,
-        )
-        answer_parts = [c.chunk_text for c in chunks[:3]]
-        answer = "\n\n---\n\n".join(answer_parts) if answer_parts else "(no relevant chunks found)"
-        citations = [
-            CitationItem(
-                text=c.chunk_text[:200],
-                doc_id=c.document_id,
-                document_type="Document Chunk",
+        try:
+            from api.deps import get_rag
+            rag = get_rag()
+            chunks = rag.retrieve(
+                query=question,
+                scope=scope,
+                scope_id=scope_id,
+                fund_id=fund_id,
+                synthetic_static=False,
             )
-            for c in chunks[:3]
-        ]
+            answer_parts = [c.chunk_text for c in chunks[:3]]
+            answer = "\n\n---\n\n".join(answer_parts) if answer_parts else None
+            citations = [
+                CitationItem(
+                    text=c.chunk_text[:200],
+                    doc_id=c.document_id,
+                    document_type="Document Chunk",
+                )
+                for c in chunks[:3]
+            ]
+        except Exception:
+            answer = None
+            citations = []
+
+        if not answer:
+            answer, _ = _llm_context_answer(question, scope, scope_id, fund_id)
+
         return CopilotAnswer(
             question=question,
             routing="rag",
@@ -319,21 +411,29 @@ async def stream_copilot(
                 f"data: {json.dumps({'token': answer, 'done': True, 'routing': 'text-to-sql', 'sql': result.generated_sql, 'citations': [], 'is_mock': False})}\n\n"
             )
         else:
-            from api.deps import get_rag
-            rag = get_rag()
-            chunks = rag.retrieve(
-                query=q,
-                scope=act_scope,
-                scope_id=act_scope_id,
-                fund_id=act_fund_id,
-                synthetic_static=False,
-            )
-            parts = [c.chunk_text for c in chunks[:3]]
-            answer = "\n\n---\n\n".join(parts) if parts else "(no relevant chunks found)"
-            citations = [
-                {"text": c.chunk_text[:200], "doc_id": c.document_id, "document_type": "Document Chunk"}
-                for c in chunks[:3]
-            ]
+            try:
+                from api.deps import get_rag
+                rag = get_rag()
+                chunks = rag.retrieve(
+                    query=q,
+                    scope=act_scope,
+                    scope_id=act_scope_id,
+                    fund_id=act_fund_id,
+                    synthetic_static=False,
+                )
+                parts = [c.chunk_text for c in chunks[:3]]
+                answer = "\n\n---\n\n".join(parts) if parts else None
+                citations = [
+                    {"text": c.chunk_text[:200], "doc_id": c.document_id, "document_type": "Document Chunk"}
+                    for c in chunks[:3]
+                ]
+            except Exception:
+                answer = None
+                citations = []
+
+            if not answer:
+                answer, _ = _llm_context_answer(q, act_scope, act_scope_id, act_fund_id)
+
             yield (
                 f"data: {json.dumps({'token': answer, 'done': True, 'routing': 'rag', 'sql': None, 'citations': citations, 'is_mock': False})}\n\n"
             )
