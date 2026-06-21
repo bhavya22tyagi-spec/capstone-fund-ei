@@ -165,6 +165,9 @@ Key joins:
   screening_results: scope='counterparty' -> scope_id = counterparty_id
 
 Effective risk tier formula: COALESCE(escalated_tier, direct_tier) from risk_scores
+
+IMPORTANT: All tier values are stored lowercase in the database: 'critical', 'high', 'medium', 'low'.
+Always use lowercase in WHERE clauses — never 'Critical', 'High', etc.
 """
 
 
