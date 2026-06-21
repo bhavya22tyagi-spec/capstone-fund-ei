@@ -49,7 +49,8 @@ export function Copilot() {
     }
 
     try {
-      const resp = await fetch(`/api/copilot/stream?${params.toString()}`)
+      const base = (import.meta.env.VITE_API_BASE_URL ?? '') + '/api'
+      const resp = await fetch(`${base}/copilot/stream?${params.toString()}`)
       if (!resp.ok || !resp.body) {
         setError(`Request failed: ${resp.status}`)
         return
