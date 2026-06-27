@@ -311,6 +311,7 @@ def _parse_response(name: str, data: dict[str, Any]) -> dict[str, Any]:
 
     top = results[0]
     score = top.get("score", 0)
+    print(f"[OpenSanctions] query={name!r} top_match={top.get('caption')!r} score={score} topics={top.get('properties',{}).get('topics',[])} threshold={_MIN_SCORE}")
     if score < _MIN_SCORE:
         return {"result_status": "clean", "hit_severity": "none", "hit_type": None, "raw_result": data}
 
