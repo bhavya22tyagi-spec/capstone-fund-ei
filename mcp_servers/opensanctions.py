@@ -310,19 +310,24 @@ def _parse_response(name: str, data: dict[str, Any]) -> dict[str, Any]:
         return {"result_status": "clean", "hit_severity": "none", "hit_type": None, "raw_result": data}
 
     top = results[0]
+    # OpenSanctions API does not always return a numeric `score` field.
+    # `target=True` is the authoritative flag that the entity is a known sanctions/PEP target.
+    # Fall back to score-based threshold only when target flag is absent.
+    is_target = top.get("target", False)
     score = top.get("score", 0)
-    if score < _MIN_SCORE:
+    if not is_target and score < _MIN_SCORE:
         return {"result_status": "clean", "hit_severity": "none", "hit_type": None, "raw_result": data}
 
     topics = top.get("properties", {}).get("topics", [])
     if "sanction" in topics or "sanction.linked" in topics:
-        sev = "confirmed" if score >= 0.9 else "high"
+        # target=True with sanction topic is a confirmed hit; score fallback for edge cases
+        sev = "confirmed" if (is_target or score >= 0.9) else "high"
         hit_type = "sanctions"
     elif "role.pep" in topics or "role.rca" in topics:
-        sev = "high" if score >= 0.9 else "medium"
+        sev = "high" if (is_target or score >= 0.9) else "medium"
         hit_type = "pep"
     else:
-        sev = "medium" if score >= 0.9 else "low"
+        sev = "medium" if (is_target or score >= 0.9) else "low"
         hit_type = "adverse"
 
     return {

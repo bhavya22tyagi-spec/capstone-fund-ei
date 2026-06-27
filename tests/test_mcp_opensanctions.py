@@ -256,17 +256,17 @@ def test_live_dbs_bank_is_clean(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# _parse_response boundary tests — pin the _MIN_SCORE = 0.6 threshold
+# _parse_response tests — target flag is the authoritative hit signal
 # ---------------------------------------------------------------------------
 
 from mcp_servers.opensanctions import _parse_response
 
 
-def test_parse_response_score_at_new_threshold_is_hit():
-    """Score exactly at 0.60 with sanction topic must now be a hit (was clean at 0.7)."""
+def test_parse_response_target_true_no_score_is_confirmed_hit():
+    """target=True with sanction topic and no score → confirmed hit (real API behaviour)."""
     data = {
         "results": [{
-            "score": 0.60,
+            "target": True,
             "caption": "Bank Rossiya",
             "schema": "Company",
             "datasets": ["us_ofac_sdn"],
@@ -276,36 +276,36 @@ def test_parse_response_score_at_new_threshold_is_hit():
     result = _parse_response("Bank Rossiya", data)
     assert result["result_status"] == "hit"
     assert result["hit_type"] == "sanctions"
-    assert result["hit_severity"] == "high"   # score < 0.9 → high, not confirmed
+    assert result["hit_severity"] == "confirmed"
 
 
-def test_parse_response_score_below_new_threshold_is_clean():
-    """Score 0.59 is below the 0.60 threshold — must return clean."""
+def test_parse_response_target_false_no_score_is_clean():
+    """target=False with no score → clean (low-confidence name collision)."""
     data = {
         "results": [{
-            "score": 0.59,
-            "caption": "Bank Rossiya",
+            "target": False,
+            "caption": "Deutsche Bank AG",
             "schema": "Company",
-            "datasets": ["us_ofac_sdn"],
-            "properties": {"topics": ["sanction"]},
+            "datasets": ["some_dataset"],
+            "properties": {"topics": []},
         }]
     }
-    result = _parse_response("Bank Rossiya", data)
+    result = _parse_response("Deutsche Bank AG", data)
     assert result["result_status"] == "clean"
 
 
-def test_parse_response_score_0_65_sanction_is_now_hit():
-    """Score 0.65 was in the old dead zone (0.6–0.69 filtered at 0.7). Now a hit."""
+def test_parse_response_target_true_pep_topic_is_hit():
+    """target=True with PEP topic → hit with high severity."""
     data = {
         "results": [{
-            "score": 0.65,
-            "caption": "Some Sanctioned Entity",
-            "schema": "Company",
-            "datasets": ["eu_sanctions"],
-            "properties": {"topics": ["sanction"]},
+            "target": True,
+            "caption": "Some PEP",
+            "schema": "Person",
+            "datasets": ["some_pep_list"],
+            "properties": {"topics": ["role.pep"]},
         }]
     }
-    result = _parse_response("Some Sanctioned Entity", data)
+    result = _parse_response("Some PEP", data)
     assert result["result_status"] == "hit"
+    assert result["hit_type"] == "pep"
     assert result["hit_severity"] == "high"
-    assert result["hit_type"] == "sanctions"
