@@ -254,7 +254,7 @@ export function BLEDrilldown() {
               <button
                 className="w-full py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
                 disabled={screenMut.isPending}
-                onClick={() => { setScreeningResult(null); setScreeningError(null); screenMut.mutate() }}
+                onClick={() => { setScreeningError(null); screenMut.mutate() }}
               >
                 {screenMut.isPending ? 'Screening…' : 'Screen this counterparty'}
               </button>
