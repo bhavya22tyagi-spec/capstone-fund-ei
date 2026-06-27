@@ -18,6 +18,7 @@ build/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/*.tsbuildinfo
 
 # Runtime artifacts
 uploads/
@@ -35,3 +36,5 @@ Thumbs.db
 
 # Vercel / Railway local caches
 .vercel/
+
+.vercel
