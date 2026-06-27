@@ -35,7 +35,7 @@ MOCK: bool = os.getenv("MOCK", "true").lower() == "true"
 
 _API_URL = "https://api.opensanctions.org/search/default"
 _API_TIMEOUT = 10  # seconds
-_MIN_SCORE = 0.7   # ignore low-confidence matches
+_MIN_SCORE = 0.6   # ignore low-confidence matches
 
 # ---------------------------------------------------------------------------
 # Tool definition (Anthropic tool_use / MCP schema format)

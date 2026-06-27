@@ -253,3 +253,59 @@ def test_live_dbs_bank_is_clean(monkeypatch):
     )
     assert result["result_status"] in ("clean", "error")
     assert result["is_mock"] is False
+
+
+# ---------------------------------------------------------------------------
+# _parse_response boundary tests — pin the _MIN_SCORE = 0.6 threshold
+# ---------------------------------------------------------------------------
+
+from mcp_servers.opensanctions import _parse_response
+
+
+def test_parse_response_score_at_new_threshold_is_hit():
+    """Score exactly at 0.60 with sanction topic must now be a hit (was clean at 0.7)."""
+    data = {
+        "results": [{
+            "score": 0.60,
+            "caption": "Bank Rossiya",
+            "schema": "Company",
+            "datasets": ["us_ofac_sdn"],
+            "properties": {"topics": ["sanction"]},
+        }]
+    }
+    result = _parse_response("Bank Rossiya", data)
+    assert result["result_status"] == "hit"
+    assert result["hit_type"] == "sanctions"
+    assert result["hit_severity"] == "high"   # score < 0.9 → high, not confirmed
+
+
+def test_parse_response_score_below_new_threshold_is_clean():
+    """Score 0.59 is below the 0.60 threshold — must return clean."""
+    data = {
+        "results": [{
+            "score": 0.59,
+            "caption": "Bank Rossiya",
+            "schema": "Company",
+            "datasets": ["us_ofac_sdn"],
+            "properties": {"topics": ["sanction"]},
+        }]
+    }
+    result = _parse_response("Bank Rossiya", data)
+    assert result["result_status"] == "clean"
+
+
+def test_parse_response_score_0_65_sanction_is_now_hit():
+    """Score 0.65 was in the old dead zone (0.6–0.69 filtered at 0.7). Now a hit."""
+    data = {
+        "results": [{
+            "score": 0.65,
+            "caption": "Some Sanctioned Entity",
+            "schema": "Company",
+            "datasets": ["eu_sanctions"],
+            "properties": {"topics": ["sanction"]},
+        }]
+    }
+    result = _parse_response("Some Sanctioned Entity", data)
+    assert result["result_status"] == "hit"
+    assert result["hit_severity"] == "high"
+    assert result["hit_type"] == "sanctions"
