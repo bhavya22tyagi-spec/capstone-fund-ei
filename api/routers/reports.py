@@ -41,6 +41,7 @@ def _load_documents(
     doc_list: list[dict],
     scope: str,
     scope_id: str,
+    entity_name: str = "",
 ) -> list[DocumentInput]:
     """Read .txt document files for the scope; skip missing files gracefully."""
     docs: list[DocumentInput] = []
@@ -54,11 +55,11 @@ def _load_documents(
                 text=path.read_text(encoding="utf-8"),
             ))
     if not docs:
-        # Fallback: synthesize a minimal document so NarrativeService doesn't raise
+        label = entity_name or scope_id
         docs.append(DocumentInput(
             doc_id="fallback",
             document_type="Summary",
-            text=f"No documents found on disk for {scope} {scope_id}.",
+            text=f"No documents are currently available for {label}.",
         ))
     return docs
 
@@ -98,7 +99,7 @@ def fund_analyst_report(fund_id: str) -> AnalystReport:
             detail="Static funds cannot generate AI analyst reports",
         )
 
-    docs = _load_documents(f.get("documents", []), scope="fund", scope_id=fund_id)
+    docs = _load_documents(f.get("documents", []), scope="fund", scope_id=fund_id, entity_name=f["name"])
 
     effective_tier: str = f.get("escalated_tier") or f["direct_tier"]
     critical_ble_names = [
@@ -115,6 +116,7 @@ def fund_analyst_report(fund_id: str) -> AnalystReport:
         direct_tier=f["direct_tier"],
         escalation_reason=f.get("escalation_reason"),
         escalated_ble_names=critical_ble_names or None,
+        entity_name=f["name"],
     )
 
     doc_type_map = {d["doc_id"]: d.get("document_type", "Document") for d in f.get("documents", [])}
@@ -162,7 +164,7 @@ def ble_analyst_report(ble_id: str) -> AnalystReport:
             detail="Static funds cannot generate AI analyst reports",
         )
 
-    docs = _load_documents(ble.get("documents", []), scope="ble", scope_id=ble_id)
+    docs = _load_documents(ble.get("documents", []), scope="ble", scope_id=ble_id, entity_name=ble["name"])
 
     result = _narrative_svc.generate(
         scope="ble",
@@ -171,6 +173,7 @@ def ble_analyst_report(ble_id: str) -> AnalystReport:
         synthetic_static=False,
         documents=docs,
         risk_tier=ble["tier"],
+        entity_name=ble["name"],
     )
 
     doc_type_map = {d["doc_id"]: d.get("document_type", "Document") for d in ble.get("documents", [])}

@@ -115,6 +115,7 @@ class NarrativeService:
         direct_tier: str | None = None,
         escalation_reason: str | None = None,
         escalated_ble_names: list[str] | None = None,
+        entity_name: str = "",
         budget: BudgetCap | None = None,
     ) -> NarrativeResult:
         """
@@ -158,6 +159,7 @@ class NarrativeService:
             direct_tier=direct_tier,
             escalation_reason=escalation_reason,
             escalated_ble_names=escalated_ble_names,
+            entity_name=entity_name,
             budget=_budget,
         )
 
@@ -300,7 +302,8 @@ def _real_generate(
     direct_tier: str | None,
     escalation_reason: str | None,
     escalated_ble_names: list[str] | None,
-    budget: BudgetCap,
+    entity_name: str = "",
+    budget: BudgetCap | None = None,
 ) -> NarrativeResult:
     prompt = _build_narrative_prompt(
         scope=scope,
@@ -309,6 +312,7 @@ def _real_generate(
         direct_tier=direct_tier,
         escalation_reason=escalation_reason,
         escalated_ble_names=escalated_ble_names,
+        entity_name=entity_name,
     )
     raw = call_llm(
         prompt=prompt,
@@ -385,6 +389,7 @@ def _build_narrative_prompt(
     direct_tier: str | None,
     escalation_reason: str | None,
     escalated_ble_names: list[str] | None,
+    entity_name: str = "",
 ) -> str:
     doc_sections = "\n\n".join(
         f"--- Document: {doc.doc_id} ({doc.document_type}) ---\n{doc.text}"
@@ -408,7 +413,8 @@ def _build_narrative_prompt(
         "Every factual claim in your narrative must be supported by verbatim text "
         "from one of the documents.\n\n"
         f"Scope:      {scope}\n"
-        f"Risk tier:  {risk_tier}\n"
+        + (f"Entity:     {entity_name}\n" if entity_name else "")
+        + f"Risk tier:  {risk_tier}\n"
         f"{escalation_block}\n"
         "Return a JSON object with exactly two keys:\n"
         '  "narrative": string — the analyst narrative (2-4 paragraphs)\n'
