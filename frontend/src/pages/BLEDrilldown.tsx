@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { ExtractionResult, UploadedDoc } from '../api/client'
+import type { ExtractionResult, UploadedDoc, ScreeningResult } from '../api/client'
 import { RiskBadge } from '../components/RiskBadge'
 import { OpenSanctionsBadge } from '../components/OpenSanctionsBadge'
 import { SyntheticBadge } from '../components/SyntheticBadge'
@@ -69,6 +69,8 @@ export function BLEDrilldown() {
   const { bleId } = useParams<{ bleId: string }>()
   const navigate = useNavigate()
   const [showFactors, setShowFactors] = useState(false)
+  const [screeningResult, setScreeningResult] = useState<ScreeningResult | null>(null)
+  const [screeningError, setScreeningError] = useState<string | null>(null)
 
   // Upload modal state
   const [showUpload, setShowUpload] = useState(false)
@@ -127,6 +129,12 @@ export function BLEDrilldown() {
       setExtractingId(null)
     },
     onError: () => setExtractingId(null),
+  })
+
+  const screenMut = useMutation({
+    mutationFn: () => api.screenSingleBle(bleId!),
+    onSuccess: (data) => { setScreeningResult(data); setScreeningError(null) },
+    onError: (err: Error) => { setScreeningError(err.message); setScreeningResult(null) },
   })
 
   const closeUpload = () => {
@@ -232,6 +240,47 @@ export function BLEDrilldown() {
               Live result from OpenSanctions — not synthetic
             </div>
           )}
+
+          <div className="mt-3 pt-3 border-t border-gray-100">
+              <button
+                className="w-full py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+                disabled={screenMut.isPending}
+                onClick={() => { setScreeningResult(null); setScreeningError(null); screenMut.mutate() }}
+              >
+                {screenMut.isPending ? 'Screening…' : 'Screen this counterparty'}
+              </button>
+
+              {screeningError && (
+                <p className="mt-2 text-xs text-red-600">{screeningError}</p>
+              )}
+
+              {screeningResult && (
+                <div className="mt-2 space-y-1.5 text-sm">
+                  {screeningResult.results.map((r, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <span className="text-gray-600">{r.name}</span>
+                      {r.result === 'hit' ? (
+                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold uppercase">
+                          {r.severity ?? 'hit'}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-semibold uppercase">
+                          clean
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {screeningResult.cards_created > 0 && (
+                    <Link
+                      to="/suggested-reviews"
+                      className="block text-xs text-indigo-600 hover:underline mt-1"
+                    >
+                      View {screeningResult.cards_created} card{screeningResult.cards_created !== 1 ? 's' : ''} in Suggested Reviews →
+                    </Link>
+                  )}
+                </div>
+              )}
+          </div>
         </div>
 
         {/* Products */}
