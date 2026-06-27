@@ -106,6 +106,12 @@ export const api = {
     post<RulesetConfig>('/admin/ruleset', config),
   runScreening: () => post<ScreeningResult>('/admin/run-screening'),
   screenSingleBle: (bleId: string) => post<ScreeningResult>(`/admin/screen-ble/${bleId}`),
+  getLastScreening: async (bleId: string): Promise<ScreeningResult | null> => {
+    const res = await fetch(`${BASE}/admin/screen-ble/${bleId}`)
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`GET /admin/screen-ble/${bleId} → ${res.status}`)
+    return res.json() as Promise<ScreeningResult>
+  },
 
   getEvals: () => get<EvalRunSummary[]>('/evals'),
 

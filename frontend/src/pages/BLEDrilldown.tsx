@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { ExtractionResult, UploadedDoc, ScreeningResult } from '../api/client'
 import { RiskBadge } from '../components/RiskBadge'
@@ -68,8 +68,8 @@ function FieldsModal({
 export function BLEDrilldown() {
   const { bleId } = useParams<{ bleId: string }>()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [showFactors, setShowFactors] = useState(false)
-  const [screeningResult, setScreeningResult] = useState<ScreeningResult | null>(null)
   const [screeningError, setScreeningError] = useState<string | null>(null)
 
   // Upload modal state
@@ -131,10 +131,19 @@ export function BLEDrilldown() {
     onError: () => setExtractingId(null),
   })
 
+  const { data: screeningResult } = useQuery({
+    queryKey: ['ble-last-screening', bleId],
+    queryFn: () => api.getLastScreening(bleId!),
+    enabled: !!bleId,
+  })
+
   const screenMut = useMutation({
     mutationFn: () => api.screenSingleBle(bleId!),
-    onSuccess: (data) => { setScreeningResult(data); setScreeningError(null) },
-    onError: (err: Error) => { setScreeningError(err.message); setScreeningResult(null) },
+    onSuccess: (data) => {
+      qc.setQueryData(['ble-last-screening', bleId], data)
+      setScreeningError(null)
+    },
+    onError: (err: Error) => setScreeningError(err.message),
   })
 
   const closeUpload = () => {
@@ -294,7 +303,7 @@ export function BLEDrilldown() {
                             </div>
                           )}
                           {r.screened_at && (
-                            <div className="text-gray-400">
+                            <div className="text-gray-500 font-semibold">
                               Screened {new Date(r.screened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
                           )}
