@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import date
 from pathlib import Path
 
@@ -91,6 +92,7 @@ def run_screening() -> dict:
             "result": result["result_status"],
             "severity": result.get("hit_severity"),
         })
+        time.sleep(0.5)
 
         if result["result_status"] == "hit":
             trigger = ReviewTrigger(
@@ -139,6 +141,7 @@ def run_screening() -> dict:
                 "result": result["result_status"],
                 "severity": result.get("hit_severity"),
             })
+            time.sleep(0.5)
 
             if result["result_status"] == "hit":
                 trigger = ReviewTrigger(

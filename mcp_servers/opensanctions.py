@@ -227,7 +227,6 @@ def screen_entity(
       ValueError          — empty name or invalid scope
       StaticFundAIError   — fund is synthetic_static (no external calls allowed)
     """
-    print(f"[OpenSanctions] screen_entity called: name={name!r} MOCK={MOCK}", flush=True)
     if not name or not name.strip():
         raise ValueError("name must not be empty")
     if scope not in ("fund", "counterparty"):
@@ -260,7 +259,6 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
     if api_key:
         headers["Authorization"] = f"ApiKey {api_key}"
 
-    print(f"[OpenSanctions] _real_screen called: name={name!r} has_key={bool(api_key)}", flush=True)
     try:
         resp = requests.get(
             _API_URL,
@@ -268,8 +266,7 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
             headers=headers,
             timeout=_API_TIMEOUT,
         )
-        print(f"[OpenSanctions] HTTP status={resp.status_code} for {name!r} body_preview={resp.text[:200]!r}", flush=True)
-        if resp.status_code in (401, 402, 403):
+        if resp.status_code in (401, 402, 403, 429):
             return {
                 "result_status": "error",
                 "hit_severity": "none",
@@ -284,7 +281,6 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
         resp.raise_for_status()
         parsed = _parse_response(name, resp.json())
     except requests.exceptions.RequestException as exc:
-        print(f"[OpenSanctions] RequestException for {name!r}: {exc}", flush=True)
         return {
             "result_status": "error",
             "hit_severity": "none",
@@ -315,7 +311,6 @@ def _parse_response(name: str, data: dict[str, Any]) -> dict[str, Any]:
 
     top = results[0]
     score = top.get("score", 0)
-    print(f"[OpenSanctions] query={name!r} top_match={top.get('caption')!r} score={score} topics={top.get('properties',{}).get('topics',[])} threshold={_MIN_SCORE}", flush=True)
     if score < _MIN_SCORE:
         return {"result_status": "clean", "hit_severity": "none", "hit_type": None, "raw_result": data}
 
