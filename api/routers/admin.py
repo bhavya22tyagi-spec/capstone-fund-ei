@@ -103,6 +103,10 @@ def screen_single_ble(ble_id: str) -> dict:
             "scope": "counterparty",
             "result": result["result_status"],
             "severity": result.get("hit_severity"),
+            "hit_type": result.get("hit_type"),
+            "datasets": result.get("datasets", []),
+            "screened_at": result.get("screened_at"),
+            "match_name": result.get("match_name"),
         }],
     }
 

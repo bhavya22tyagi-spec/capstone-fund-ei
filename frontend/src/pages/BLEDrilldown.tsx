@@ -255,33 +255,53 @@ export function BLEDrilldown() {
               )}
 
               {screeningResult && (
-                <div className="mt-2 space-y-1.5 text-sm">
+                <div className="mt-2 space-y-2 text-sm">
                   {screeningResult.results.map((r, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-gray-600">{r.name}</span>
-                      {r.result === 'hit' ? (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold uppercase">
-                          {r.severity ?? 'hit'}
-                        </span>
-                      ) : r.result === 'error' ? (
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold uppercase">
-                          ⚠ api error
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-semibold uppercase">
-                          clean
-                        </span>
+                    <div key={i}>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">{r.name}</span>
+                        {r.result === 'hit' ? (
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold uppercase">
+                            {r.severity ?? 'hit'}
+                          </span>
+                        ) : r.result === 'error' ? (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold uppercase">
+                            ⚠ api error
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-semibold uppercase">
+                            clean
+                          </span>
+                        )}
+                      </div>
+                      {r.result === 'hit' && (r.hit_type || r.datasets.length > 0 || r.screened_at) && (
+                        <div className="mt-1 text-xs text-gray-500 space-y-0.5 pl-0.5">
+                          {r.hit_type && (
+                            <div>
+                              <span className="font-medium text-red-600">
+                                {r.hit_type === 'sanctions' ? 'Sanctions' : r.hit_type === 'pep' ? 'PEP' : 'Adverse Media'}
+                              </span>
+                            </div>
+                          )}
+                          {r.datasets.length > 0 && (
+                            <div className="text-gray-400">
+                              {r.datasets.map(d =>
+                                d.replace('us_ofac_sdn', 'OFAC SDN')
+                                 .replace('eu_sanctions', 'EU Sanctions')
+                                 .replace(/_/g, ' ')
+                                 .replace(/\b\w/g, c => c.toUpperCase())
+                              ).join(' · ')}
+                            </div>
+                          )}
+                          {r.screened_at && (
+                            <div className="text-gray-400">
+                              Screened {new Date(r.screened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
-                  {screeningResult.cards_created > 0 && (
-                    <Link
-                      to="/suggested-reviews"
-                      className="block text-xs text-indigo-600 hover:underline mt-1"
-                    >
-                      View {screeningResult.cards_created} card{screeningResult.cards_created !== 1 ? 's' : ''} in Suggested Reviews →
-                    </Link>
-                  )}
                 </div>
               )}
           </div>

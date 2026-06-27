@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ScreeningResult } from '../api/client'
 import type { RulesetConfig } from '../types'
@@ -16,7 +15,6 @@ const WEIGHT_FIELDS: Array<{ key: keyof RulesetConfig; label: string }> = [
 function pct(v: number) { return `${v.toFixed(0)}%` }
 
 export function AdminRuleset() {
-  const navigate = useNavigate()
   const { data: remote, isLoading } = useQuery({
     queryKey: ['ruleset'],
     queryFn: api.getRuleset,
@@ -249,14 +247,6 @@ if (isLoading || !form) return <div className="p-8 text-gray-500">Loading rulese
               </table>
             </div>
 
-            {screeningResult.cards_created > 0 && (
-              <button
-                className="w-full py-2 rounded-lg text-sm font-medium border border-indigo-300 text-indigo-700 hover:bg-indigo-50 transition-colors"
-                onClick={() => navigate('/suggested-reviews')}
-              >
-                View {screeningResult.cards_created} card{screeningResult.cards_created !== 1 ? 's' : ''} in Suggested Reviews →
-              </button>
-            )}
           </div>
         )}
       </div>

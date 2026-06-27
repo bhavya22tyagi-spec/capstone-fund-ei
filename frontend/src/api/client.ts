@@ -63,7 +63,16 @@ export interface ScreeningResult {
   screened_entities: number
   triggers_fired: number
   cards_created: number
-  results: Array<{ name: string; scope: string; result: string; severity: string | null }>
+  results: Array<{
+    name: string
+    scope: string
+    result: string
+    severity: string | null
+    hit_type: string | null
+    datasets: string[]
+    screened_at: string | null
+    match_name: string | null
+  }>
 }
 
 export const api = {
