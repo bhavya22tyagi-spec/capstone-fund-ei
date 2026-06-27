@@ -266,7 +266,9 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
             headers=headers,
             timeout=_API_TIMEOUT,
         )
+        print(f"[opensanctions] name={name!r} status={resp.status_code}", flush=True)
         if resp.status_code in (401, 402, 403, 429):
+            print(f"[opensanctions] API error {resp.status_code} for {name!r}: {resp.text[:200]}", flush=True)
             return {
                 "result_status": "error",
                 "hit_severity": "none",
@@ -279,7 +281,11 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
                 "raw_result": {"error": f"http_{resp.status_code}"},
             }
         resp.raise_for_status()
-        parsed = _parse_response(name, resp.json())
+        data = resp.json()
+        top = data.get("results", [{}])[0] if data.get("results") else {}
+        print(f"[opensanctions] name={name!r} results={len(data.get('results', []))} top_target={top.get('target')} top_score={top.get('score')} top_caption={top.get('caption')}", flush=True)
+        parsed = _parse_response(name, data)
+        print(f"[opensanctions] name={name!r} parsed_status={parsed.get('result_status')} severity={parsed.get('hit_severity')}", flush=True)
     except requests.exceptions.RequestException as exc:
         return {
             "result_status": "error",

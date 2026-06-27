@@ -263,6 +263,10 @@ export function BLEDrilldown() {
                         <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold uppercase">
                           {r.severity ?? 'hit'}
                         </span>
+                      ) : r.result === 'error' ? (
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-semibold uppercase">
+                          ⚠ api error
+                        </span>
                       ) : (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-semibold uppercase">
                           clean
