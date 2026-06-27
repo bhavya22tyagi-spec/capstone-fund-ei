@@ -96,6 +96,7 @@ export const api = {
   publishRuleset: (config: RulesetConfig) =>
     post<RulesetConfig>('/admin/ruleset', config),
   runScreening: () => post<ScreeningResult>('/admin/run-screening'),
+  screenSingleBle: (bleId: string) => post<ScreeningResult>(`/admin/screen-ble/${bleId}`),
 
   getEvals: () => get<EvalRunSummary[]>('/evals'),
 

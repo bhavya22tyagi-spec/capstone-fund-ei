@@ -52,6 +52,18 @@ export function AdminRuleset() {
     },
   })
 
+  const rossiyaMut = useMutation({
+    mutationFn: () => api.screenSingleBle('b0001001-b000-0000-0000-000000000001'),
+    onSuccess: (data) => { setScreeningResult(data); setScreeningError(null) },
+    onError: (err: Error) => { setScreeningError(err.message); setScreeningResult(null) },
+  })
+
+  const deutscheMut = useMutation({
+    mutationFn: () => api.screenSingleBle('b0002001-b000-0000-0000-000000000002'),
+    onSuccess: (data) => { setScreeningResult(data); setScreeningError(null) },
+    onError: (err: Error) => { setScreeningError(err.message); setScreeningResult(null) },
+  })
+
   if (isLoading || !form) return <div className="p-8 text-gray-500">Loading ruleset…</div>
 
   const total = WEIGHT_FIELDS.reduce((s, f) => s + (form[f.key] as number), 0)
@@ -179,20 +191,38 @@ export function AdminRuleset() {
           Entity Screening
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          Screen all live-fund BLE counterparties and UBOs against OpenSanctions, and check
-          document expiry dates. Results appear in the Suggested Reviews queue for analyst
-          Accept / Decline.
+          Screen BLE counterparties and UBOs against OpenSanctions. Results appear in the
+          Suggested Reviews queue for analyst Accept / Decline.
         </p>
+
+        {/* Targeted single-entity buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            className="py-2.5 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+            disabled={rossiyaMut.isPending || deutscheMut.isPending || screeningMut.isPending}
+            onClick={() => { setScreeningResult(null); setScreeningError(null); rossiyaMut.mutate() }}
+          >
+            {rossiyaMut.isPending ? 'Screening…' : 'Screen Bank Rossiya'}
+          </button>
+          <button
+            className="py-2.5 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+            disabled={rossiyaMut.isPending || deutscheMut.isPending || screeningMut.isPending}
+            onClick={() => { setScreeningResult(null); setScreeningError(null); deutscheMut.mutate() }}
+          >
+            {deutscheMut.isPending ? 'Screening…' : 'Screen Deutsche Bank AG'}
+          </button>
+        </div>
+
         <button
           className="w-full py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
-          disabled={screeningMut.isPending}
+          disabled={screeningMut.isPending || rossiyaMut.isPending || deutscheMut.isPending}
           onClick={() => {
             setScreeningResult(null)
             setScreeningError(null)
             screeningMut.mutate()
           }}
         >
-          {screeningMut.isPending ? 'Screening entities…' : 'Run Screening Now'}
+          {screeningMut.isPending ? 'Screening entities…' : 'Run Full Screening (18 calls)'}
         </button>
 
         {screeningError && (

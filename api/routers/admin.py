@@ -52,6 +52,61 @@ def publish_ruleset(body: RulesetConfig) -> RulesetConfig:
     return RulesetConfig(**ACTIVE_RULESET)
 
 
+@router.post("/admin/screen-ble/{ble_id}")
+def screen_single_ble(ble_id: str) -> dict:
+    """
+    Screen a single BLE counterparty by ble_id. Uses 1 API call only.
+    Returns the screening result and fires a trigger card if hit.
+    """
+    ble = data_loader.get_ble(ble_id)
+    if not ble:
+        raise HTTPException(status_code=404, detail=f"BLE {ble_id} not found")
+
+    agent = AgentOrchestrationService()
+    workflow = get_workflow()
+
+    institution = ble["institution"]
+    result = screen_entity(
+        name=institution,
+        scope="counterparty",
+        scope_id=ble_id,
+        fund_id=ble["fund_id"],
+        synthetic_static=False,
+    )
+
+    cards_created: list[str] = []
+    if result["result_status"] == "hit":
+        trigger = ReviewTrigger(
+            trigger_type=TriggerType.NEW_SANCTIONS_PEP_HIT,
+            scope=TriggerScope.BLE,
+            fund_id=ble["fund_id"],
+            ble_id=ble_id,
+            detail={
+                "counterparty_name": institution,
+                "ble_name": ble["name"],
+                "ble_risk_tier": ble["tier"],
+                "hit_type": result.get("hit_type"),
+                "hit_severity": result.get("hit_severity"),
+            },
+        )
+        cards = agent.process_trigger(trigger, fund_id=ble["fund_id"], synthetic_static=False)
+        for card in cards:
+            workflow.create_suggestion(card)
+            cards_created.append(card.card_id)
+
+    return {
+        "screened_entities": 1,
+        "triggers_fired": 1 if result["result_status"] == "hit" else 0,
+        "cards_created": len(cards_created),
+        "results": [{
+            "name": institution,
+            "scope": "counterparty",
+            "result": result["result_status"],
+            "severity": result.get("hit_severity"),
+        }],
+    }
+
+
 @router.post("/admin/run-screening")
 def run_screening() -> dict:
     """
