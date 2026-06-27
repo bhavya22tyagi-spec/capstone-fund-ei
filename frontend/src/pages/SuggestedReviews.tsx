@@ -151,7 +151,7 @@ export function SuggestedReviews() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {s.trigger_type.replace(/_/g, ' ')}
+                    {s.trigger_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   </td>
                   <td className="px-4 py-3 text-gray-500 max-w-xs">
                     {s.what_changed_summary}
