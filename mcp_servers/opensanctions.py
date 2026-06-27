@@ -259,6 +259,7 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
     if api_key:
         headers["Authorization"] = f"ApiKey {api_key}"
 
+    print(f"[OpenSanctions] _real_screen called: name={name!r} has_key={bool(api_key)}")
     try:
         resp = requests.get(
             _API_URL,
@@ -266,7 +267,8 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
             headers=headers,
             timeout=_API_TIMEOUT,
         )
-        if resp.status_code in (401, 403):
+        print(f"[OpenSanctions] HTTP status={resp.status_code} for {name!r} body_preview={resp.text[:200]!r}")
+        if resp.status_code in (401, 402, 403):
             return {
                 "result_status": "error",
                 "hit_severity": "none",
@@ -281,6 +283,7 @@ def _real_screen(name: str, scope: str, scope_id: str, ts: str) -> dict[str, Any
         resp.raise_for_status()
         parsed = _parse_response(name, resp.json())
     except requests.exceptions.RequestException as exc:
+        print(f"[OpenSanctions] RequestException for {name!r}: {exc}")
         return {
             "result_status": "error",
             "hit_severity": "none",
