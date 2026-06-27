@@ -23,6 +23,7 @@ from services.narrative.service import (
     NarrativeService,
     _build_judge_prompt,
     _build_narrative_prompt,
+    _format_screening_block,
     _mock_generate,
     _mock_judge,
     _parse_judge_response,
@@ -465,3 +466,141 @@ def test_judge_uses_default_budget_when_none(svc):
         budget=None,
     )
     assert result.passed is True
+
+
+# ===========================================================================
+# Section 11 — screening_result wired into prompt (real-path, monkeypatched)
+# ===========================================================================
+
+_HIT_RESULT = {
+    "name": "Bank Rossiya",
+    "scope": "counterparty",
+    "result": "hit",
+    "severity": "critical",
+    "hit_type": "sanctions",
+    "datasets": ["Sanctions", "OFAC SDN"],
+    "screened_at": "2026-06-27T10:00:00+00:00",
+    "match_name": "Bank Rossiya",
+}
+
+_CLEAN_RESULT = {
+    "name": "Deutsche Bank",
+    "scope": "counterparty",
+    "result": "clean",
+    "severity": None,
+    "hit_type": None,
+    "datasets": [],
+    "screened_at": "2026-06-27T10:00:00+00:00",
+    "match_name": None,
+}
+
+
+def test_format_screening_block_hit_contains_status():
+    block = _format_screening_block(_HIT_RESULT)
+    assert "HIT" in block
+    assert "LIVE SCREENING RESULT" in block
+    assert "critical" in block
+    assert "sanctions" in block
+
+
+def test_format_screening_block_clean_contains_status():
+    block = _format_screening_block(_CLEAN_RESULT)
+    assert "CLEAN" in block
+    assert "LIVE SCREENING RESULT" in block
+
+
+def test_build_prompt_contains_screening_block_when_hit(doc1):
+    prompt = _build_narrative_prompt(
+        scope="ble",
+        documents=[doc1],
+        risk_tier="critical",
+        direct_tier=None,
+        escalation_reason=None,
+        escalated_ble_names=None,
+        entity_name="Bank Rossiya (Moscow, Russia)",
+        screening_result=_HIT_RESULT,
+    )
+    assert "LIVE SCREENING RESULT" in prompt
+    assert "HIT" in prompt
+    assert "critical" in prompt
+
+
+def test_build_prompt_contains_screening_block_when_clean(doc1):
+    prompt = _build_narrative_prompt(
+        scope="ble",
+        documents=[doc1],
+        risk_tier="low",
+        direct_tier=None,
+        escalation_reason=None,
+        escalated_ble_names=None,
+        entity_name="Deutsche Bank (Frankfurt, Germany)",
+        screening_result=_CLEAN_RESULT,
+    )
+    assert "LIVE SCREENING RESULT" in prompt
+    assert "CLEAN" in prompt
+
+
+def test_build_prompt_has_no_screening_block_when_none(doc1):
+    prompt = _build_narrative_prompt(
+        scope="ble",
+        documents=[doc1],
+        risk_tier="low",
+        direct_tier=None,
+        escalation_reason=None,
+        escalated_ble_names=None,
+        entity_name="Some BLE",
+        screening_result=None,
+    )
+    assert "LIVE SCREENING RESULT" not in prompt
+
+
+def test_mock_narrative_unchanged_with_screening_result(svc, budget, doc1):
+    """MOCK path must NOT change even when screening_result is passed — no LLM, no prompt."""
+    result_no_sr = svc.generate(
+        scope="ble", scope_id=SCOPE_ID_BLE, fund_id=FUND_ID,
+        synthetic_static=False, documents=[doc1], risk_tier="critical",
+        budget=budget,
+    )
+    result_with_sr = svc.generate(
+        scope="ble", scope_id=SCOPE_ID_BLE, fund_id=FUND_ID,
+        synthetic_static=False, documents=[doc1], risk_tier="critical",
+        screening_result=_HIT_RESULT, budget=budget,
+    )
+    assert result_with_sr.narrative == result_no_sr.narrative
+    assert result_with_sr.is_mock is True
+
+
+def test_real_path_prompt_contains_screening_block(monkeypatch, doc1, budget):
+    import services.narrative.service as ns_module
+
+    captured_prompt: list[str] = []
+
+    def fake_call_llm(**kwargs):
+        captured_prompt.append(kwargs.get("prompt", ""))
+        payload = {
+            "narrative": "Bank Rossiya is subject to OFAC SDN sanctions.",
+            "citations": [{"claim": "Bank Rossiya is subject to OFAC SDN sanctions.",
+                           "doc_id": "doc-test-01", "citation_text": "EX-TEST-001"}],
+        }
+        return {
+            "content": json.dumps(payload),
+            "model": "claude-sonnet-4-6",
+            "usage": {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150},
+            "is_mock": False,
+        }
+
+    monkeypatch.setattr(ns_module, "MOCK", False)
+    monkeypatch.setattr(ns_module, "call_llm", fake_call_llm)
+
+    svc = NarrativeService()
+    svc.generate(
+        scope="ble", scope_id=SCOPE_ID_BLE, fund_id=FUND_ID,
+        synthetic_static=False, documents=[doc1], risk_tier="critical",
+        entity_name="Bank Rossiya (Moscow, Russia)",
+        screening_result=_HIT_RESULT,
+        budget=budget,
+    )
+
+    assert len(captured_prompt) == 1
+    assert "LIVE SCREENING RESULT" in captured_prompt[0]
+    assert "HIT" in captured_prompt[0]

@@ -104,3 +104,28 @@ def append_decision(record: dict) -> None:
                 conn.commit()
         except Exception:
             pass  # DB write failure never breaks the API response
+
+
+# ---------------------------------------------------------------------------
+# Screening cache — live OpenSanctions results per BLE (PRD §8.3, §17)
+# In-memory: survives requests within a Railway instance, cleared on restart.
+# ---------------------------------------------------------------------------
+
+_screening_cache: dict[str, dict] = {}
+
+
+def set_screening(ble_id: str, payload: dict) -> None:
+    _screening_cache[ble_id] = payload
+
+
+def get_screening(ble_id: str) -> dict | None:
+    return _screening_cache.get(ble_id)
+
+
+def get_screening_result(ble_id: str) -> dict | None:
+    """Return the first result entry from the cached payload, or None if not screened."""
+    payload = _screening_cache.get(ble_id)
+    if not payload:
+        return None
+    results = payload.get("results", [])
+    return results[0] if results else None

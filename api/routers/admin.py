@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from api.deps import ACTIVE_RULESET, _ruleset_version, get_workflow
+from api.deps import ACTIVE_RULESET, _ruleset_version, get_workflow, set_screening, get_screening
 from api.models import RulesetConfig
 import api.data_loader as data_loader
 from mcp_servers.opensanctions import screen_entity
@@ -15,10 +15,6 @@ router = APIRouter()
 
 _SEED_PATH = Path(__file__).parent.parent.parent / "evals" / "seed_truth.json"
 _EXPIRY_WINDOW_DAYS = 30
-
-# Last screening result per BLE — populated by POST /admin/screen-ble/{ble_id}.
-# In-memory: survives requests, lost on Railway restart (acceptable for demo).
-_screening_cache: dict[str, dict] = {}
 
 
 @router.get("/admin/ruleset", response_model=RulesetConfig)
@@ -59,7 +55,7 @@ def publish_ruleset(body: RulesetConfig) -> RulesetConfig:
 @router.get("/admin/screen-ble/{ble_id}")
 def get_last_screening(ble_id: str) -> dict:
     """Return the last cached screening result for a BLE, or 404 if never screened."""
-    result = _screening_cache.get(ble_id)
+    result = get_screening(ble_id)
     if result is None:
         raise HTTPException(status_code=404, detail="No screening result cached for this BLE")
     return result
@@ -122,7 +118,7 @@ def screen_single_ble(ble_id: str) -> dict:
             "match_name": result.get("match_name"),
         }],
     }
-    _screening_cache[ble_id] = response
+    set_screening(ble_id, response)
     return response
 
 

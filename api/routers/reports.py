@@ -21,7 +21,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from api.data_loader import get_fund, get_ble
-from api.deps import append_decision
+from api.deps import append_decision, get_screening_result
 from api.models import AnalystReport, DecisionRecord, DecisionRequest, DocumentInfo, ReportCitation
 from services.narrative.service import NarrativeService, DocumentInput
 
@@ -166,6 +166,8 @@ def ble_analyst_report(ble_id: str) -> AnalystReport:
 
     docs = _load_documents(ble.get("documents", []), scope="ble", scope_id=ble_id, entity_name=ble["name"])
 
+    live = get_screening_result(ble_id)
+
     result = _narrative_svc.generate(
         scope="ble",
         scope_id=ble_id,
@@ -174,10 +176,20 @@ def ble_analyst_report(ble_id: str) -> AnalystReport:
         documents=docs,
         risk_tier=ble["tier"],
         entity_name=ble["name"],
+        screening_result=live,
     )
 
     doc_type_map = {d["doc_id"]: d.get("document_type", "Document") for d in ble.get("documents", [])}
     citations = [_to_report_citation(c, doc_type_map.get(c.doc_id, "Document")) for c in result.citations]
+
+    # Presence check (not truthiness): a live clean result sets both fields to None,
+    # correctly clearing any stale seeded hit data.
+    if live is not None:
+        screening_status = live.get("severity")
+        hit_type = live.get("hit_type")
+    else:
+        screening_status = ble.get("hit_severity")
+        hit_type = ble.get("hit_type")
 
     return AnalystReport(
         scope="ble",
@@ -194,8 +206,8 @@ def ble_analyst_report(ble_id: str) -> AnalystReport:
         narrative=result.narrative,
         citations=citations,
         document_status=[_to_doc_info(d) for d in ble.get("documents", [])],
-        screening_status=ble.get("hit_severity"),
-        hit_type=ble.get("hit_type"),
+        screening_status=screening_status,
+        hit_type=hit_type,
         ruleset_version=ble.get("ruleset_version", "v1"),
         model=result.model,
         prompt_version=result.prompt_version,

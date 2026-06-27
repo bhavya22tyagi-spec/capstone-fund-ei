@@ -116,6 +116,7 @@ class NarrativeService:
         escalation_reason: str | None = None,
         escalated_ble_names: list[str] | None = None,
         entity_name: str = "",
+        screening_result: dict | None = None,
         budget: BudgetCap | None = None,
     ) -> NarrativeResult:
         """
@@ -160,6 +161,7 @@ class NarrativeService:
             escalation_reason=escalation_reason,
             escalated_ble_names=escalated_ble_names,
             entity_name=entity_name,
+            screening_result=screening_result,
             budget=_budget,
         )
 
@@ -303,6 +305,7 @@ def _real_generate(
     escalation_reason: str | None,
     escalated_ble_names: list[str] | None,
     entity_name: str = "",
+    screening_result: dict | None = None,
     budget: BudgetCap | None = None,
 ) -> NarrativeResult:
     prompt = _build_narrative_prompt(
@@ -313,6 +316,7 @@ def _real_generate(
         escalation_reason=escalation_reason,
         escalated_ble_names=escalated_ble_names,
         entity_name=entity_name,
+        screening_result=screening_result,
     )
     raw = call_llm(
         prompt=prompt,
@@ -382,6 +386,36 @@ def _real_judge(
 # Private — prompt builders
 # ---------------------------------------------------------------------------
 
+def _format_screening_block(sr: dict) -> str:
+    """Format a live OpenSanctions result entry into a narrative prompt instruction."""
+    result = sr.get("result", "unknown")
+    if result == "hit":
+        severity = sr.get("severity") or "unknown"
+        hit_type = sr.get("hit_type") or "unknown"
+        datasets = ", ".join(sr.get("datasets", [])) or "unknown"
+        match_name = sr.get("match_name") or "unknown"
+        return (
+            f"\nLIVE SCREENING RESULT (OpenSanctions — authoritative):\n"
+            f"  Status:    HIT\n"
+            f"  Severity:  {severity}\n"
+            f"  Hit type:  {hit_type}\n"
+            f"  Datasets:  {datasets}\n"
+            f"  Match:     {match_name}\n"
+            f"You MUST mention this sanctions/PEP hit in the narrative. "
+            f"This is externally verified data — not from the documents.\n"
+        )
+    if result == "clean":
+        return (
+            "\nLIVE SCREENING RESULT (OpenSanctions — authoritative):\n"
+            "  Status:    CLEAN — no sanctions or PEP hits found\n"
+            "You SHOULD note the clean screening result in the narrative.\n"
+        )
+    return (
+        f"\nLIVE SCREENING RESULT:\n"
+        f"  Status:    {result} (screening unavailable or error)\n"
+    )
+
+
 def _build_narrative_prompt(
     scope: str,
     documents: list[DocumentInput],
@@ -390,6 +424,7 @@ def _build_narrative_prompt(
     escalation_reason: str | None,
     escalated_ble_names: list[str] | None,
     entity_name: str = "",
+    screening_result: dict | None = None,
 ) -> str:
     doc_sections = "\n\n".join(
         f"--- Document: {doc.doc_id} ({doc.document_type}) ---\n{doc.text}"
@@ -407,15 +442,21 @@ def _build_narrative_prompt(
             f"  Escalating BLEs:  {ble_list}\n"
         )
 
+    screening_block = ""
+    if screening_result is not None:
+        screening_block = _format_screening_block(screening_result)
+
     return (
         "You are a KYB compliance analyst drafting a structured review narrative.\n"
-        "Use ONLY the documents provided below. Do not invent facts.\n"
-        "Every factual claim in your narrative must be supported by verbatim text "
+        "Use ONLY the documents provided below for document-based facts. "
+        "Externally verified data (e.g. live screening results) may also be cited.\n"
+        "Every factual claim drawn from documents must be supported by verbatim text "
         "from one of the documents.\n\n"
         f"Scope:      {scope}\n"
         + (f"Entity:     {entity_name}\n" if entity_name else "")
         + f"Risk tier:  {risk_tier}\n"
-        f"{escalation_block}\n"
+        f"{escalation_block}"
+        f"{screening_block}\n"
         "Return a JSON object with exactly two keys:\n"
         '  "narrative": string — the analyst narrative (2-4 paragraphs)\n'
         '  "citations": array of objects, each with:\n'
