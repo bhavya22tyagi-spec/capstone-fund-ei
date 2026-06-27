@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { ExtractionResult, UploadedDoc, ScreeningResult } from '../api/client'
+import type { UploadedDoc, ScreeningResult } from '../api/client'
 import { RiskBadge } from '../components/RiskBadge'
 import { OpenSanctionsBadge } from '../components/OpenSanctionsBadge'
 import { SyntheticBadge } from '../components/SyntheticBadge'
@@ -27,44 +27,6 @@ const DOC_TYPES = [
   'Investment Manager Agreement',
 ]
 
-function FieldsModal({
-  result,
-  onClose,
-}: {
-  result: ExtractionResult
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Extracted Fields</h2>
-          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
-            Extracted
-          </span>
-        </div>
-        <pre className="bg-gray-900 text-green-300 text-xs rounded-lg p-4 overflow-x-auto whitespace-pre-wrap break-words">
-          {JSON.stringify(result.extracted_fields, null, 2)}
-        </pre>
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function BLEDrilldown() {
   const { bleId } = useParams<{ bleId: string }>()
   const navigate = useNavigate()
@@ -79,10 +41,6 @@ export function BLEDrilldown() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Extraction state
-  const [extractingId, setExtractingId] = useState<string | null>(null)
-  const [extractionResults, setExtractionResults] = useState<Record<string, ExtractionResult>>({})
-  const [viewFieldsDocId, setViewFieldsDocId] = useState<string | null>(null)
-
   const { data: ble, isLoading } = useQuery({
     queryKey: ['ble', bleId],
     queryFn: () => api.getBLE(bleId!),
@@ -119,18 +77,6 @@ export function BLEDrilldown() {
     },
   })
 
-  const extractMut = useMutation({
-    mutationFn: (docId: string) => {
-      setExtractingId(docId)
-      return api.extractDocument(docId)
-    },
-    onSuccess: result => {
-      setExtractionResults(prev => ({ ...prev, [result.document_id]: result }))
-      setExtractingId(null)
-    },
-    onError: () => setExtractingId(null),
-  })
-
   const { data: screeningResult } = useQuery({
     queryKey: ['ble-last-screening', bleId],
     queryFn: () => api.getLastScreening(bleId!),
@@ -163,8 +109,6 @@ export function BLEDrilldown() {
     : statusKey.toLowerCase().includes('hit') || statusKey.toLowerCase().includes('sanction') ? 'hit'
     : statusKey.toLowerCase().includes('pep') ? 'pep'
     : statusKey
-
-  const viewingResult = viewFieldsDocId ? extractionResults[viewFieldsDocId] : null
 
   return (
     <div className="p-8 max-w-4xl">
@@ -359,14 +303,12 @@ export function BLEDrilldown() {
               <th className="px-4 py-2 text-left">Type</th>
               <th className="px-4 py-2 text-left">Status</th>
               <th className="px-4 py-2 text-left">Expiry</th>
-              <th className="px-4 py-2 text-left">Extraction</th>
-              <th className="px-4 py-2 text-left">Embedding</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {ble.documents.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-4 text-center text-gray-400 italic">
+                <td colSpan={3} className="px-4 py-4 text-center text-gray-400 italic">
                   No documents on file
                 </td>
               </tr>
@@ -385,8 +327,6 @@ export function BLEDrilldown() {
                   <td className={`px-4 py-2 text-xs ${expired ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                     {doc.expiry_date ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-xs text-gray-500">{doc.extraction_status}</td>
-                  <td className="px-4 py-2 text-xs text-gray-500">{doc.embedding_status}</td>
                 </tr>
               )
             })}
@@ -420,56 +360,15 @@ export function BLEDrilldown() {
               <tr>
                 <th className="px-4 py-2 text-left">Type</th>
                 <th className="px-4 py-2 text-left">File</th>
-                <th className="px-4 py-2 text-left">Extraction</th>
-                <th className="px-4 py-2 text-left">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {uploadedDocs.map(doc => {
-                const isExtracting = extractingId === doc.document_id
-                const result = extractionResults[doc.document_id]
-                const isExtracted = result != null || doc.extraction_status === 'extracted'
-                return (
-                  <tr key={doc.document_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-800 font-medium">{doc.document_type}</td>
-                    <td className="px-4 py-2 text-xs text-gray-500 font-mono">{doc.filename ?? '—'}</td>
-                    <td className="px-4 py-2">
-                      {isExtracted ? (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                          extracted
-                        </span>
-                      ) : doc.extraction_status === 'failed' ? (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                          failed
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
-                          pending
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      {isExtracted && result ? (
-                        <button
-                          onClick={() => setViewFieldsDocId(doc.document_id)}
-                          className="text-xs px-2.5 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                        >
-                          View Fields
-                        </button>
-                      ) : isExtracting ? (
-                        <span className="text-xs text-indigo-500 animate-pulse">Extracting…</span>
-                      ) : (
-                        <button
-                          onClick={() => extractMut.mutate(doc.document_id)}
-                          className="text-xs px-2.5 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                        >
-                          Extract
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
+              {uploadedDocs.map(doc => (
+                <tr key={doc.document_id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 text-gray-800 font-medium">{doc.document_type}</td>
+                  <td className="px-4 py-2 text-xs text-gray-500 font-mono">{doc.filename ?? '—'}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
@@ -571,10 +470,6 @@ export function BLEDrilldown() {
         </div>
       )}
 
-      {/* Extracted fields viewer modal */}
-      {viewingResult && (
-        <FieldsModal result={viewingResult} onClose={() => setViewFieldsDocId(null)} />
-      )}
     </div>
   )
 }

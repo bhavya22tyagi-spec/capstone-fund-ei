@@ -195,8 +195,6 @@ export function AnalystReport() {
                 <th className="pb-2 font-medium">Type</th>
                 <th className="pb-2 font-medium">Status</th>
                 <th className="pb-2 font-medium">Expiry</th>
-                <th className="pb-2 font-medium">Extracted</th>
-                <th className="pb-2 font-medium">Embedded</th>
               </tr>
             </thead>
             <tbody>
@@ -205,8 +203,6 @@ export function AnalystReport() {
                   <td className="py-2 text-gray-700">{doc.document_type}</td>
                   <td className="py-2 capitalize text-gray-600">{doc.status}</td>
                   <td className="py-2 text-gray-500">{doc.expiry_date ?? '—'}</td>
-                  <td className="py-2 text-gray-500 capitalize">{doc.extraction_status}</td>
-                  <td className="py-2 text-gray-500 capitalize">{doc.embedding_status}</td>
                 </tr>
               ))}
             </tbody>
